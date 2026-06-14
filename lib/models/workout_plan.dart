@@ -1,7 +1,9 @@
+import 'workout_exercise.dart';
+
 class WorkoutPlan {
   final String id;
   final String name;
-  final List<Exercise> exercises;
+  final List<WorkoutExercise> exercises;
 
   WorkoutPlan({
     required this.id,

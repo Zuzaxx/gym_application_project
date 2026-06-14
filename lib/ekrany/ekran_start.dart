@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'ekran_biblioteka_cwiczen.dart';
+import 'ekran_tworzenie_planu.dart';
 
 class StartowyEkran extends StatefulWidget {
   const StartowyEkran({super.key, required this.title});
@@ -70,7 +70,7 @@ Widget build(BuildContext context) {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => const EkranBibliotekaCwiczen(),
+                  builder: (context) => const EkranTworzeniaPlanu(),
                   ),
               );
             },
