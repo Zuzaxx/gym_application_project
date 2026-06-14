@@ -4,15 +4,17 @@ import '../models/workout_exercise.dart';
 import '../models/workout_plan.dart';
 import '../services/plan_service.dart';
 
-class EkranTworzeniaPlanu extends StatefulWidget {
-  const EkranTworzeniaPlanu({super.key});
+class EkranEdycjiPlanu extends StatefulWidget {
+  final WorkoutPlan plan;
+
+  const EkranEdycjiPlanu({super.key, required this.plan});
 
   @override
-  State<EkranTworzeniaPlanu> createState() => _EkranTworzeniaPlanuState();
+  State<EkranEdycjiPlanu> createState() => _EkranEdycjiPlanuState();
 }
 
-class _EkranTworzeniaPlanuState extends State<EkranTworzeniaPlanu> {
-  final TextEditingController nazwaPlanController = TextEditingController();
+class _EkranEdycjiPlanuState extends State<EkranEdycjiPlanu> {
+  late TextEditingController nazwaPlanController;
   final List<Exercise> wszystkieCwiczenia = [
     Exercise(id: '1', name: 'Przysiady', muscleGroup: 'Nogi'),
     Exercise(id: '2', name: 'Wykroki', muscleGroup: 'Nogi'),
@@ -34,15 +36,31 @@ class _EkranTworzeniaPlanuState extends State<EkranTworzeniaPlanu> {
   @override
   void initState() {
     super.initState();
+    nazwaPlanController = TextEditingController(text: widget.plan.name);
+
     for (var cwiczenie in wszystkieCwiczenia) {
-      zaznaczone[cwiczenie.id] = false;
-      serieControllers[cwiczenie.id] = TextEditingController(text: '3');
-      powtorzeniaControllers[cwiczenie.id] = TextEditingController(text: '10');
-      kgControllers[cwiczenie.id] = TextEditingController(text: '0');
+      final istniejace = widget.plan.exercises
+          .where((e) => e.exerciseId == cwiczenie.id)
+          .toList();
+
+      if (istniejace.isNotEmpty) {
+        zaznaczone[cwiczenie.id] = true;
+        serieControllers[cwiczenie.id] =
+            TextEditingController(text: istniejace.first.series.toString());
+        powtorzeniaControllers[cwiczenie.id] =
+            TextEditingController(text: istniejace.first.powtorzenia.toString());
+        kgControllers[cwiczenie.id] =
+            TextEditingController(text: istniejace.first.kg.toString());
+      } else {
+        zaznaczone[cwiczenie.id] = false;
+        serieControllers[cwiczenie.id] = TextEditingController(text: '3');
+        powtorzeniaControllers[cwiczenie.id] = TextEditingController(text: '10');
+        kgControllers[cwiczenie.id] = TextEditingController(text: '0');
+      }
     }
   }
 
-  void zapiszPlan() {
+  void zapiszZmiany() {
     if (nazwaPlanController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Wpisz nazwę planu!')),
@@ -59,8 +77,8 @@ class _EkranTworzeniaPlanuState extends State<EkranTworzeniaPlanu> {
       return;
     }
 
-    final plan = WorkoutPlan(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
+    final nowyPlan = WorkoutPlan(
+      id: widget.plan.id,
       name: nazwaPlanController.text,
       exercises: wybrane.map((e) => WorkoutExercise(
         exerciseId: e.id,
@@ -70,11 +88,11 @@ class _EkranTworzeniaPlanuState extends State<EkranTworzeniaPlanu> {
         kg: double.tryParse(kgControllers[e.id]!.text) ?? 0,
       )).toList(),
     );
-    
-    PlanService().dodajPlan(plan);
-    
+
+    PlanService().edytujPlan(nowyPlan);
+
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Plan "${plan.name}" zapisany!')),
+      SnackBar(content: Text('Plan "${nowyPlan.name}" zaktualizowany!')),
     );
 
     Navigator.pop(context);
@@ -84,7 +102,7 @@ class _EkranTworzeniaPlanuState extends State<EkranTworzeniaPlanu> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Nowy plan treningowy'),
+        title: const Text('Edytuj plan'),
       ),
       body: Column(
         children: [
@@ -167,9 +185,9 @@ class _EkranTworzeniaPlanuState extends State<EkranTworzeniaPlanu> {
           Padding(
             padding: const EdgeInsets.all(12.0),
             child: ElevatedButton.icon(
-              onPressed: zapiszPlan,
+              onPressed: zapiszZmiany,
               icon: const Icon(Icons.save),
-              label: const Text('Zapisz plan'),
+              label: const Text('Zapisz zmiany'),
               style: ElevatedButton.styleFrom(
                 minimumSize: const Size(double.infinity, 50),
               ),
