@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../services/database_service.dart';
+import 'ekran_tworzenie_planu.dart';
+import 'ekran_lista_planow.dart';
 
 class StartowyEkran extends StatefulWidget {
   const StartowyEkran({super.key, required this.title});
@@ -70,7 +71,7 @@ Widget build(BuildContext context) {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => const EkranBibliotekaCwiczen(),
+                  builder: (context) => const EkranTworzeniaPlanu(),
                   ),
               );
             },
@@ -85,7 +86,12 @@ Widget build(BuildContext context) {
 
           OutlinedButton.icon(
             onPressed: () {
-              // TODO: przejście do historii planów
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const EkranListaPlanow(),
+                ),
+              );
             },
             icon: const Icon(Icons.history),
             label: const Text("Historia planów"),
