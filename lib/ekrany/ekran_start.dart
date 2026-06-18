@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-//import '../services/database_service.dart';
+import '../services/database_service.dart';
 
 class StartowyEkran extends StatefulWidget {
   const StartowyEkran({super.key, required this.title});
@@ -67,7 +67,12 @@ Widget build(BuildContext context) {
 
           ElevatedButton.icon(
             onPressed: () {
-              // TODO: przejście do generatora planu
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const EkranBibliotekaCwiczen(),
+                  ),
+              );
             },
             icon: const Icon(Icons.auto_awesome),
             label: const Text("Stwórz plan treningowy"),
