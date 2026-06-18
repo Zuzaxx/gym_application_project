@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/exercise.dart';
 import '../models/workout_exercise.dart';
 import '../models/workout_plan.dart';
-import '../services/plan_service.dart';
 
 class EkranTworzeniaPlanu extends StatefulWidget {
   const EkranTworzeniaPlanu({super.key});
@@ -30,6 +31,7 @@ class _EkranTworzeniaPlanuState extends State<EkranTworzeniaPlanu> {
   final Map<String, TextEditingController> serieControllers = {};
   final Map<String, TextEditingController> powtorzeniaControllers = {};
   final Map<String, TextEditingController> kgControllers = {};
+  bool _trwaZapisywanie = false;
 
   @override
   void initState() {
@@ -42,7 +44,18 @@ class _EkranTworzeniaPlanuState extends State<EkranTworzeniaPlanu> {
     }
   }
 
-  void zapiszPlan() {
+  // Zaktualizowana funkcja bezpośrednio zapisująca do Firebase
+  Future<void> zapiszPlan() async {
+    final user = FirebaseAuth.instance.currentUser;
+    
+    // Zabezpieczenie przed brakiem logowania
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('BŁĄD: Nie jesteś zalogowana! Zaloguj się najpierw.'), backgroundColor: Colors.red)
+      );
+      return;
+    }
+
     if (nazwaPlanController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Wpisz nazwę planu!')),
@@ -59,25 +72,43 @@ class _EkranTworzeniaPlanuState extends State<EkranTworzeniaPlanu> {
       return;
     }
 
+    setState(() => _trwaZapisywanie = true);
+
     final plan = WorkoutPlan(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      name: nazwaPlanController.text,
+      id: '', // Firebase sam wygeneruje unikalne ID dokumentu
+      name: nazwaPlanController.text.trim(),
       exercises: wybrane.map((e) => WorkoutExercise(
         exerciseId: e.id,
         exerciseName: e.name,
         series: int.tryParse(serieControllers[e.id]!.text) ?? 3,
         powtorzenia: int.tryParse(powtorzeniaControllers[e.id]!.text) ?? 10,
-        kg: double.tryParse(kgControllers[e.id]!.text) ?? 0,
+        kg: double.tryParse(kgControllers[e.id]!.text) ?? 0.0,
       )).toList(),
     );
     
-    PlanService().dodajPlan(plan);
-    
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Plan "${plan.name}" zapisany!')),
-    );
-
-    Navigator.pop(context);
+    try {
+      // Bezpośredni i bezpieczny zapis do bazy przypisanej do Twojego konta
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .collection('plans')
+          .add(plan.toMap());
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Plan "${plan.name}" został zapisany!'), backgroundColor: Colors.green),
+        );
+        Navigator.pop(context); // Powrót po udanym zapisie
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Wystąpił błąd podczas zapisu: $e'), backgroundColor: Colors.red),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _trwaZapisywanie = false);
+    }
   }
 
   @override
@@ -93,7 +124,7 @@ class _EkranTworzeniaPlanuState extends State<EkranTworzeniaPlanu> {
             child: TextField(
               controller: nazwaPlanController,
               decoration: const InputDecoration(
-                labelText: 'Nazwa planu',
+                labelText: 'Nazwa planu (np. Nogi)',
                 border: OutlineInputBorder(),
               ),
             ),
@@ -167,9 +198,11 @@ class _EkranTworzeniaPlanuState extends State<EkranTworzeniaPlanu> {
           Padding(
             padding: const EdgeInsets.all(12.0),
             child: ElevatedButton.icon(
-              onPressed: zapiszPlan,
-              icon: const Icon(Icons.save),
-              label: const Text('Zapisz plan'),
+              onPressed: _trwaZapisywanie ? null : zapiszPlan,
+              icon: _trwaZapisywanie 
+                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)) 
+                  : const Icon(Icons.save),
+              label: Text(_trwaZapisywanie ? 'Zapisywanie...' : 'Zapisz plan'),
               style: ElevatedButton.styleFrom(
                 minimumSize: const Size(double.infinity, 50),
               ),
