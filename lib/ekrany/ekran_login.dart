@@ -17,24 +17,43 @@ class _LoginScreenState extends State<LoginScreen> {
   bool isLogin = true;
   bool loading = false;
 
-  Future<void> submit() async {
+Future<void> submit() async {
+    final email = emailController.text.trim();
+    final password = passwordController.text.trim();
+
+    //zabezpieczenie kodu (walidacja)
+    if (email.isEmpty || password.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Błąd: Pola nie mogą być puste!")),
+      );
+      return; // Przerywa działanie, nie loguje
+    }
+
+    if (!email.contains('@')) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Błąd: Niepoprawny format adresu e-mail!")),
+      );
+      return; // Przerywa działanie, bo mail nie ma @
+    }
+
+    if (password.length < 6) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Błąd: Hasło musi mieć minimum 6 znaków!")),
+      );
+      return; 
+    }
+
     setState(() => loading = true);
 
     try {
       if (isLogin) {
-        await _auth.login(
-          emailController.text.trim(),
-          passwordController.text.trim(),
-        );
+        await _auth.login(email, password);
       } else {
-        await _auth.register(
-          emailController.text.trim(),
-          passwordController.text.trim(),
-        );
+        await _auth.register(email, password);
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Błąd: $e")),
+        SnackBar(content: Text("Błąd Firebase: $e")),
       );
     }
 
